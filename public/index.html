@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador IA - Consórcio Automotivo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* ── TELA DE LOGIN ── */
+        .login-screen {
+            width: 100%;
+            max-width: 380px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+            padding: 30px;
+            text-align: center;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+        .login-logo { margin-bottom: 24px; }
+        .login-logo .icon { font-size: 48px; margin-bottom: 10px; color: #075e54; }
+        .login-logo h1 { font-size: 20px; color: #075e54; margin-bottom: 6px; }
+        .login-logo p  { font-size: 12px; color: #888; }
+
+        .login-group { margin-bottom: 20px; }
+        .login-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: #444;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .login-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid #ddd;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            background: #fafafa;
+            font-family: inherit;
+            letter-spacing: 1.5px; /* Para senhas */
+        }
+
+        .login-group input:focus { border-color: #25d366; background: white; }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #25d366, #128c7e);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 15px;
+            transition: opacity 0.2s;
+            letter-spacing: 0.3px;
+        }
+
+        .login-btn:hover { opacity: 0.92; }
+
+        .login-error {
+            color: #f44336;
+            font-size: 12px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        /* ── TELA DE CONFIGURAÇÃO ── */
+        .config-screen {
+            display: none; /* Escondido inicialmente */
+            width: 100%;
+            max-width: 450px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+            padding: 28px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .config-logo { text-align: center; margin-bottom: 16px; /* Ajustado para subir */ }
+        .config-logo .icon { font-size: 40px; margin-bottom: 8px; }
+        .config-logo h1 { font-size: 18px; color: #075e54; margin-bottom: 4px; }
+        .config-logo p  { font-size: 12px; color: #888; }
+
+        .config-group { margin-bottom: 12px; /* Ajustado para subir */ }
+        .config-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: #444;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .config-group input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid #ddd;
+            border-radius: 10px;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+            background: #fafafa;
+            font-family: inherit;
+        }
+
+        .config-group input:focus { border-color: #25d366; background: white; }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #444;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+
+        .sel-btn {
+            padding: 10px 6px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .sel-btn:hover { border-color: #25d366; color: #25d366; }
+        .sel-btn.active { background: #25d366; border-color: #25d366; color: white; }
+        .sel-btn .icon { font-size: 16px; display: block; margin-bottom: 2px; }
+
+        .start-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #25d366, #128c7e);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 15px;
+            margin-top: 4px;
+            transition: opacity 0.2s;
+            letter-spacing: 0.3px;
+        }
+
+        .start-btn:hover { opacity: 0.92; }
+
+        /* CHAT */
+        .chat-screen {
+            display: none;
+            width: 100%;
+            max-width: 450px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+            flex-direction: column;
+            height: 90vh;
+            max-height: 820px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #25d366, #128c7e);
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .header-info { flex: 1; }
+        .header-info h2 { font-size: 14px; font-weight: 700; }
+        .header-info p  { font-size: 11px; opacity: 0.85; margin-top: 1px; }
+
+        .header-right { text-align: right; }
+        .score-badge {
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .mood-bar {
+            background: rgba(0,0,0,0.2);
+            padding: 7px 16px;
+            display: flex;
+            gap: 14px;
+            align-items: center;
+        }
+
+        .mood-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 10px;
+            color: rgba(255,255,255,0.9);
+            flex: 1;
+        }
+
+        .mood-item span { white-space: nowrap; }
+
+        .mood-track {
+            flex: 1;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .mood-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.8s ease;
+        }
+
+        .f-trust    { background: #64b5f6; }
+        .f-interest { background: #81c784; }
+        .f-patience { background: #ffb74d; }
+
+        .status-bar {
+            background: #f5f5f5;
+            padding: 6px 16px;
+            font-size: 11px;
+            color: #666;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        .chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px;
+            background: #ece5dd;
+        }
+
+        .chat-box::-webkit-scrollbar { width: 3px; }
+        .chat-box::-webkit-scrollbar-thumb { background: #bbb; border-radius: 2px; }
+
+        .message { margin-bottom: 10px; display: flex; animation: msgIn 0.25s ease; }
+        @keyframes msgIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+        .message.user { justify-content: flex-end; padding-left: 55px; }
+        .message.bot  { justify-content: flex-start; padding-right: 55px; }
+
+        .bubble {
+            max-width: 100%;
+            padding: 9px 12px 5px;
+            border-radius: 12px;
+            line-height: 1.55;
+            font-size: 13px;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+
+        .user .bubble { background: #dcf8c6; border-bottom-right-radius: 3px; color: #000; }
+        .bot  .bubble { background: white; border-bottom-left-radius: 3px; border: 1px solid #e5e5e5; color: #000; }
+
+        .bubble-ts { font-size: 10px; color: #999; text-align: right; margin-top: 2px; }
+
+        .typing-row { justify-content: flex-start; padding-right: 55px; }
+        .typing-bubble {
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            border-bottom-left-radius: 3px;
+            padding: 10px 14px;
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .dot { width: 7px; height: 7px; background: #bbb; border-radius: 50%; animation: bounce 1.2s infinite; }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce { 0%,60%,100%{transform:translateY(0);opacity:.4} 30%{transform:translateY(-5px);opacity:1} }
+
+        .input-area {
+            padding: 10px 12px;
+            background: white;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        #userInput {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1.5px solid #ddd;
+            border-radius: 22px;
+            font-size: 13px;
+            outline: none;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        #userInput:focus { border-color: #25d366; }
+        #userInput:disabled { background: #f5f5f5; color: #aaa; }
+
+        #sendBtn {
+            width: 44px; height: 44px;
+            background: #25d366;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        #sendBtn:hover   { background: #128c7e; }
+        #sendBtn:disabled{ background: #ccc; cursor: not-allowed; }
+
+        /* AVALIAÇÃO */
+        .eval-card {
+            background: white;
+            border: 2px solid #25d366;
+            border-radius: 14px;
+            padding: 18px;
+            margin: 8px 0;
+            font-size: 12px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .eval-card h2 {
+            font-size: 15px;
+            color: #075e54;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .score-ring {
+            width: 90px; height: 90px;
+            border-radius: 50%;
+            margin: 15px auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            border: 5px solid;
+        }
+
+        .score-ring .big { font-size: 30px; line-height: 1; }
+        .score-ring .small { font-size: 11px; margin-top: 2px; }
+
+        .ring-green { border-color: #4caf50; color: #4caf50; }
+        .ring-blue { border-color: #2196f3; color: #2196f3; }
+        .ring-orange { border-color: #ff9800; color: #ff9800; }
+        .ring-red { border-color: #f44336; color: #f44336; }
+
+        .decision-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-align: center;
+            margin: 0 auto 18px;
+            width: fit-content;
+        }
+
+        .divider { border: none; border-top: 1px solid #eee; margin: 15px 0; }
+
+        .eval-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 12px;
+            border-bottom: 1px dashed #f0f0f0;
+        }
+        .eval-row:last-of-type { border-bottom: none; }
+        .eval-row .lbl { font-weight: 600; color: #444; }
+        .eval-row .val { color: #555; }
+
+        .eval-sec { font-weight: 700; color: #075e54; font-size: 12px; margin: 18px 0 8px; }
+
+        .crit-bar { margin: 5px 0; }
+        .crit-bar .crit-head { display: flex; justify-content: space-between; font-size: 11px; color: #555; margin-bottom: 3px; }
+        .bar-track { height: 6px; background: #eee; border-radius: 3px; overflow: hidden; }
+        .bar-fill  { height: 100%; border-radius: 3px; transition: width 1.2s ease; }
+
+        .feedback-box {
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin: 6px 0;
+            font-size: 12px;
+            line-height: 1.7;
+            color: #333;
+        }
+
+        .fb-green  { background: #e8f5e9; border-left: 4px solid #4caf50; }
+        .fb-blue   { background: #e3f2fd; border-left: 4px solid #2196f3; }
+
+        .eval-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .eval-list li {
+            font-size: 11px;
+            color: #444;
+            line-height: 1.8;
+            margin-bottom: 3px;
+            padding-left: 10px;
+            position: relative;
+        }
+        .eval-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 7px;
+            width: 4px;
+            height: 4px;
+            background: #25d366;
+            border-radius: 50%;
+        }
+
+        .restart-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #25d366, #128c7e);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 15px;
+            margin-top: 20px;
+            transition: opacity 0.2s;
+        }
+        .restart-btn:hover { opacity: 0.92; }
+    </style>
+</head>
+<body>
+
+    <!-- TELA DE LOGIN -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-logo">
+            <span class="icon">🔑</span>
+            <h1>Acesso Restrito</h1>
+            <p>Insira a senha para iniciar o simulador.</p>
+        </div>
+        <div class="login-group">
+            <label for="passwordInput">Senha</label>
+            <input type="password" id="passwordInput" placeholder="********">
+        </div>
+        <button class="login-btn" onclick="checkPassword()">Entrar</button>
+        <div id="loginError" class="login-error">Senha incorreta. Tente novamente.</div>
+    </div>
+
+    <!-- TELA DE CONFIGURAÇÃO -->
+    <div id="configScreen" class="config-screen">
+        <div class="config-logo">
+            <span class="icon">🚗</span>
+            <h1>Simulador de Cliente IA</h1>
+            <p>Caminho Veículos - Treinamento de Vendas</p>
+        </div>
+
+        <div class="config-group">
+            <label for="vendorName">Seu Nome (Vendedor)</label>
+            <input type="text" id="vendorName" placeholder="Ex: João Silva">
+        </div>
+
+        <div class="section-title">Perfil do Cliente</div>
+        <div id="profileGrid" class="grid-3">
+            <button class="sel-btn active" data-profile="iniciante">
+                <span class="icon">🙋‍♂️</span> Iniciante
+            </button>
+            <button class="sel-btn" data-profile="pesquisador">
+                <span class="icon">🔎</span> Pesquisador
+            </button>
+            <button class="sel-btn" data-profile="urgente">
+                <span class="icon">⚡</span> Urgente
+            </button>
+            <button class="sel-btn" data-profile="conservador">
+                <span class="icon">🐢</span> Conservador
+            </button>
+            <button class="sel-btn" data-profile="experienciado">
+                <span class="icon">👨‍🎓</span> Experienciado
+            </button>
+            <button class="sel-btn" data-profile="desconfiado">
+                <span class="icon">🤨</span> Desconfiado
+            </button>
+        </div>
+
+        <div class="section-title">Dificuldade</div>
+        <div id="diffGrid" class="grid-3">
+            <button class="sel-btn" data-diff="facil">
+                <span class="icon">😊</span> Fácil
+            </button>
+            <button class="sel-btn active" data-diff="medio">
+                <span class="icon">😐</span> Médio
+            </button>
+            <button class="sel-btn" data-diff="dificil">
+                <span class="icon">😠</span> Difícil
+            </button>
+        </div>
+
+        <button class="start-btn" onclick="startSimulation()">Iniciar Simulação</button>
+    </div>
+
+    <!-- TELA DO CHAT -->
+    <div id="chatScreen" class="chat-screen">
+        <div class="chat-header">
+            <div id="clientAvatar" class="avatar"></div>
+            <div class="header-info">
+                <h2 id="clientName"></h2>
+                <p id="clientSubtitle"></p>
+            </div>
+            <div class="header-right">
+                <div class="score-badge">Score: <span id="scoreDisplay">50</span></div>
+            </div>
+        </div>
+
+        <div class="mood-bar">
+            <div class="mood-item">
+                <span>Confiança</span>
+                <div class="mood-track"><div id="trustBar" class="mood-fill f-trust" style="width:50%;"></div></div>
+            </div>
+            <div class="mood-item">
+                <span>Interesse</span>
+                <div class="mood-track"><div id="interestBar" class="mood-fill f-interest" style="width:60%;"></div></div>
+            </div>
+            <div class="mood-item">
+                <span>Paciência</span>
+                <div class="mood-track"><div id="patienceBar" class="mood-fill f-patience" style="width:70%;"></div></div>
+            </div>
+        </div>
+
+        <div id="statusBar" class="status-bar"></div>
+
+        <div id="chatBox" class="chat-box">
+            <!-- Mensagens do chat aqui -->
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Digite sua resposta...">
+            <button id="sendBtn" onclick="sendMessage()">
+                <span class="icon">▶️</span>
+            </button>
+        </div>
+    </div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// CONFIGURAÇÕES GLOBAIS
+// ══════════════════════════════════════════════════════
+const ACCESS_PASSWORD = 'caminho2026'; // <--- DEFINA SUA SENHA AQUI!
+const MAX_TOKENS = 100; // Respostas curtas
+const MAX_HISTORY = 4;  // Histórico limitado
+
+// ══════════════════════════════════════════════════════
+// DADOS DO CLIENTE (PERFIS, DIFICULDADES, CARROS, NOMES)
+// ══════════════════════════════════════════════════════
+const perfis = {
+    iniciante: {
+        nome: "Iniciante",
+        avatar: "🙋‍♂️",
+        personalidade: "Não sabe quase nada sobre consórcio. Precisa de explicações básicas e claras. Pode fazer perguntas óbvias. Busca segurança e entender o processo. Não tem pressa."
+    },
+    pesquisador: {
+        nome: "Pesquisador",
+        avatar: "🔎",
+        personalidade: "Já pesquisou bastante online, viu vídeos e comparou algumas administradoras. Tem perguntas mais técnicas e específicas. Quer detalhes sobre taxas, prazos, contemplação e regulamentação. Pode testar o conhecimento do vendedor."
+    },
+    urgente: {
+        nome: "Urgente",
+        avatar: "⚡",
+        personalidade: "Precisa do carro para ontem. Está impaciente e focado em como ser contemplado o mais rápido possível. Pode estar pensando em dar um lance alto. Não se importa tanto com detalhes burocráticos, mas sim com a solução imediata. Pode ser um pouco agressivo se sentir que está perdendo tempo."
+    },
+    conservador: {
+        nome: "Conservador",
+        avatar: "🐢",
+        personalidade: "Muito cauteloso e avesso a riscos. Preocupa-se com a segurança do investimento, garantias, devolução de valores em caso de desistência e a solidez da administradora. Fará muitas perguntas sobre o 'e se...'. Não toma decisões por impulso."
+    },
+    experienciado: {
+        nome: "Experienciado",
+        avatar: "👨‍🎓",
+        personalidade: "Já teve consórcio antes ou tem amigos/familiares que tiveram. Conhece a dinâmica, mas pode ter tido experiências ruins ou boas. Fará perguntas comparativas e sobre diferenciais. Pode ter objeções baseadas em experiências passadas."
+    },
+    desconfiado: {
+        nome: "Desconfiado",
+        avatar: "🤨",
+        personalidade: "Suspeita de tudo. Acha que consórcio é 'furada' ou que sempre tem 'letras miúdas'. Questiona a honestidade do processo, a transparência das informações e a real chance de contemplação. O vendedor precisará construir muita confiança e ser extremamente transparente."
+    }
+};
+
+const dificuldades = {
+    facil: {
+        nome: "Fácil",
+        paciencia: 80,
+        agressividade: 2,
+        tecnicidade: 3,
+        maxMensagens: 10
+    },
+    medio: {
+        nome: "Médio",
+        paciencia: 60,
+        agressividade: 5,
+        tecnicidade: 6,
+        maxMensagens: 15
+    },
+    dificil: {
+        nome: "Difícil",
+        paciencia: 40,
+        agressividade: 8,
+        tecnicidade: 9,
+        maxMensagens: 20
+    }
+};
+
+const nomesClientes = [
+    "Ana Silva", "Bruno Costa", "Carla Santos", "Daniel Oliveira", "Eduarda Pereira",
+    "Felipe Rodrigues", "Giovanna Almeida", "Hugo Fernandes", "Isabela Lima", "João Martins",
+    "Karen Souza", "Lucas Gomes", "Mariana Rocha", "Nuno Barbosa", "Olívia Ribeiro",
+    "Pedro Carvalho", "Quiteria Dias", "Rafael Mendes", "Sofia Castro", "Thiago Nunes",
+    "Ursula Pires", "Vitor Correia", "Xenia Freitas", "Yago Rocha", "Zelia Bezerra",
+    "Alexandre Souza", "Beatriz Lima", "Carlos Eduardo", "Diana Gomes", "Enzo Ferreira",
+    "Fernanda Costa", "Gustavo Santos", "Helena Oliveira", "Igor Pereira", "Júlia Rodrigues",
+    "Kleber Almeida", "Laura Fernandes", "Marcelo Lima", "Natália Martins", "Otávio Rocha",
+    "Patrícia Gomes", "Quintino Dias", "Ricardo Castro", "Silvia Nunes", "Tiago Pires",
+    "Vanessa Correia", "Wagner Freitas", "Yasmin Rocha", "Zeca Bezerra", "Amanda Silva",
+    "Bernardo Costa", "Cecília Santos", "Diego Oliveira", "Evelyn Pereira", "Fabrício Rodrigues",
+    "Gabriela Almeida", "Henrique Fernandes", "Ingrid Lima", "Jonas Martins", "Kátia Souza",
+    "Leonardo Gomes", "Mônica Rocha", "Nelson Barbosa", "Osvaldo Ribeiro", "Paula Carvalho",
+    "Quezia Dias", "Roberto Mendes", "Sandra Castro", "Tadeu Nunes", "Valéria Pires",
+    "Wellington Correia", "Xavier Freitas", "Yara Rocha", "Zoe Bezerra", "Alice Silva",
+    "Breno Costa", "Clara Santos", "Davi Oliveira", "Elisa Pereira", "Fernando Rodrigues",
+    "Giovana Almeida", "Heitor Fernandes", "Isadora Lima", "Júlio Martins", "Kelly Souza",
+    "Luiz Gomes", "Manuela Rocha", "Nicole Barbosa", "Orlando Ribeiro", "Priscila Carvalho",
+    "Queiroz Dias", "Renata Mendes", "Sérgio Castro", "Tatiane Nunes", "Vinícius Pires",
+    "Wallace Correia", "Ximena Freitas", "Yuri Rocha", "Zilda Bezerra", "Arthur Silva",
+    "Bianca Costa", "Caio Santos", "Débora Oliveira", "Elias Pereira", "Flávia Rodrigues",
+    "Guilherme Almeida", "Heloísa Fernandes", "Ícaro Lima", "Janaína Martins", "Kevin Souza",
+    "Lívia Gomes", "Márcio Rocha", "Nathalia Barbosa", "Osmar Ribeiro", "Pâmela Carvalho",
+    "Quirino Dias", "Rafaela Mendes", "Samuel Castro", "Tânia Nunes", "Ubiratan Pires",
+    "Viviane Correia", "Wendell Freitas", "Xuxa Rocha", "Yasmim Bezerra", "Zaqueu Silva",
+    "André Silva", "Bruna Costa", "Cintia Santos", "Diego Oliveira", "Elaine Pereira",
+    "Fabiana Rodrigues", "Gabriel Almeida", "Hélio Fernandes", "Ivan Lima", "Jéssica Martins",
+    "Kauan Souza", "Larissa Gomes", "Marcos Rocha", "Nívea Barbosa", "Otávio Ribeiro",
+    "Priscila Carvalho", "Queila Dias", "Rodrigo Mendes", "Simone Castro", "Tarcísio Nunes",
+    "Uriel Pires", "Valéria Correia", "Washington Freitas", "Xavier Rocha", "Yuri Bezerra",
+    "Zuleica Silva", "Aline Costa", "Bernardo Santos", "Cássia Oliveira", "Davi Pereira",
+    "Eliana Rodrigues", "Fábio Almeida", "Gisele Fernandes", "Henrique Lima", "Isabela Martins",
+    "Jeferson Souza", "Juliana Gomes", "Leandro Rocha", "Luana Barbosa", "Maurício Ribeiro",
+    "Nathália Carvalho", "Oscar Dias", "Paula Mendes", "Roberto Castro", "Sabrina Nunes",
+    "Tales Pires", "Valdir Correia", "Vivian Freitas", "Wallace Rocha", "Yasmin Bezerra",
+    "Zilda Silva", "Adriana Costa", "Alexandre Santos", "Beatriz Oliveira", "Bruno Pereira",
+    "Camila Rodrigues", "Daniela Almeida", "Eduardo Fernandes", "Fátima Lima", "Guilherme Martins",
+    "Helena Souza", "Igor Gomes", "Janaína Rocha", "João Barbosa", "Kátia Ribeiro",
+    "Leonardo Carvalho", "Lívia Dias", "Márcio Mendes", "Natália Castro", "Otávio Nunes",
+    "Patrícia Pires", "Pedro Correia", "Quirino Freitas", "Rafael Rocha", "Sandra Bezerra",
+    "Thiago Silva", "Vanessa Costa", "Vitor Santos", "Wellington Oliveira", "Ximena Pereira",
+    "Yago Rodrigues", "Zoe Almeida", "Amanda Fernandes", "Arthur Lima", "Bianca Martins",
+    "Caio Souza", "Carla Gomes", "Cintia Rocha", "Daniel Barbosa", "Eduarda Ribeiro",
+    "Elisa Carvalho", "Felipe Dias", "Flávia Mendes", "Gabriel Castro", "Giovanna Nunes",
+    "Heitor Pires", "Isadora Correia", "Júlia Freitas", "Lucas Rocha", "Manuela Bezerra",
+    "Nicole Silva", "Orlando Costa", "Pâmela Santos", "Quezia Oliveira", "Renata Pereira",
+    "Ricardo Rodrigues", "Sofia Almeida", "Sérgio Fernandes", "Tadeu Lima", "Tatiane Martins",
+    "Ubiratan Souza", "Valéria Gomes", "Vinícius Rocha", "Wallace Barbosa", "Yara Ribeiro",
+    "Zeca Carvalho", "Alice Dias", "Breno Mendes", "Clara Castro", "Davi Nunes",
+    "Elisa Pires", "Fernando Correia", "Flávia Freitas", "Guilherme Rocha", "Heloísa Bezerra",
+    "Ícaro Silva", "Janaína Costa", "Júlio Santos", "Kevin Oliveira", "Kelly Pereira",
+    "Leandro Rodrigues", "Lívia Almeida", "Luiz Fernandes", "Márcio Lima", "Manuela Martins",
+    "Nathalia Souza", "Nelson Gomes", "Nicole Rocha", "Osvaldo Barbosa", "Otávio Ribeiro",
+    "Paula Carvalho", "Pedro Dias", "Priscila Mendes", "Rafael Castro", "Renata Nunes"
+];
+
+const carrosScenarios = [
+    {
+        atual: "Honda Civic EXL 2019",
+        valor: "R$ 92.000",
+        desejado: "Toyota Corolla Cross XRE 2024",
+        extra: "R$ 18.000",
+        objetivo: "Trocar por um SUV mais confortável para viajar com a família",
+        profissao: "Representante Comercial",
+        idade: 34,
+        parcelaIdeal: "R$ 1.850"
+    },
+    {
+        atual: "Hyundai HB20 Platinum 2021",
+        valor: "R$ 58.000",
+        desejado: "Hyundai Creta Limited 2024",
+        extra: "R$ 9.000",
+        objetivo: "Ter mais espaço e conforto no dia a dia",
+        profissao: "Supervisora Administrativa",
+        idade: 29,
+        parcelaIdeal: "R$ 1.200"
+    },
+    {
+        atual: "Chevrolet Onix Premier 2020",
+        valor: "R$ 65.000",
+        desejado: "Chevrolet Tracker LTZ 2024",
+        extra: "R$ 12.000",
+        objetivo: "Subir de categoria sem financiar",
+        profissao: "Analista de Dados",
+        idade: 27,
+        parcelaIdeal: "R$ 1.500"
+    },
+    {
+        atual: "Jeep Compass Longitude 2020",
+        valor: "R$ 115.000",
+        desejado: "Toyota SW4 SRX 2024",
+        extra: "R$ 25.000",
+        objetivo: "Trocar por um carro maior para viagens longas",
+        profissao: "Empresário",
+        idade: 41,
+        parcelaIdeal: "R$ 3.800"
+    },
+    {
+        atual: "Volkswagen Gol MSI 2018",
+        valor: "R$ 38.000",
+        desejado: "Volkswagen T-Cross Comfortline 2024",
+        extra: "R$ 7.000",
+        objetivo: "Sair do carro básico e pegar um SUV",
+        profissao: "Motorista de Aplicativo",
+        idade: 33,
+        parcelaIdeal: "R$ 1.050"
+    },
+    {
+        atual: "Fiat Argo Drive 2021",
+        valor: "R$ 72.000",
+        desejado: "Fiat Cronos Drive 2024",
+        extra: "R$ 8.000",
+        objetivo: "Ter um sedã mais confortável para trabalhar",
+        profissao: "Vendedor Externo",
+        idade: 31,
+        parcelaIdeal: "R$ 1.300"
+    },
+    {
+        atual: "Toyota Corolla GLi 2020",
+        valor: "R$ 108.000",
+        desejado: "Toyota Corolla Altis Hybrid 2025",
+        extra: "R$ 15.000",
+        objetivo: "Economizar combustível no uso diário",
+        profissao: "Médico",
+        idade: 45,
+        parcelaIdeal: "R$ 2.900"
+    },
+    {
+        atual: "Volkswagen Nivus Comfortline 2021",
+        valor: "R$ 95.000",
+        desejado: "Volkswagen Taos Highline 2024",
+        extra: "R$ 16.000",
+        objetivo: "Ter mais espaço interno para a família",
+        profissao: "Coordenador Comercial",
+        idade: 38,
+        parcelaIdeal: "R$ 2.400"
+    },
+    {
+        atual: "Renault Kwid Zen 2022",
+        valor: "R$ 42.000",
+        desejado: "Fiat Pulse Audace 2024",
+        extra: "R$ 6.000",
+        objetivo: "Comprar o primeiro SUV",
+        profissao: "Auxiliar Financeiro",
+        idade: 24,
+        parcelaIdeal: "R$ 950"
+    },
+    {
+        atual: "Fiat Toro Freedom 2021",
+        valor: "R$ 128.000",
+        desejado: "Ford Ranger XLT 2024",
+        extra: "R$ 22.000",
+        objetivo: "Usar uma picape maior para trabalho e lazer",
+        profissao: "Produtor Rural",
+        idade: 47,
+        parcelaIdeal: "R$ 4.100"
+    },
+    {
+        atual: "Chevrolet Cruze LT 2019",
+        valor: "R$ 89.000",
+        desejado: "BYD King GS 2025",
+        extra: "R$ 14.000",
+        objetivo: "Migrar para um híbrido moderno",
+        profissao: "Engenheiro Civil",
+        idade: 36,
+        parcelaIdeal: "R$ 2.200"
+    },
+    {
+        atual: "Nissan Kicks SV 2020",
+        valor: "R$ 83.000",
+        desejado: "Honda HR-V Touring 2024",
+        extra: "R$ 13.000",
+        objetivo: "Ter mais tecnologia e conforto",
+        profissao: "Dentista",
+        idade: 40,
+        parcelaIdeal: "R$ 2.000"
+    },
+    {
+        atual: "Ford Ka SE 2019",
+        valor: "R$ 45.000",
+        desejado: "Chevrolet Onix Plus LT 2024",
+        extra: "R$ 5.000",
+        objetivo: "Trocar por um carro mais econômico",
+        profissao: "Professor",
+        idade: 28,
+        parcelaIdeal: "R$ 980"
+    },
+    {
+        atual: "Jeep Renegade Sport 2021",
+        valor: "R$ 98.000",
+        desejado: "Jeep Compass Limited 2024",
+        extra: "R$ 17.000",
+        objetivo: "Subir de categoria mantendo a marca",
+        profissao: "Gerente Bancário",
+        idade: 39,
+        parcelaIdeal: "R$ 2.700"
+    },
+    {
+        atual: "Toyota Hilux SRV 2020",
+        valor: "R$ 198.000",
+        desejado: "Ram Rampage Laramie 2024",
+        extra: "R$ 32.000",
+        objetivo: "Ter uma picape mais moderna e tecnológica",
+        profissao: "Empresário do Agro",
+        idade: 52,
+        parcelaIdeal: "R$ 5.500"
+    },
+    {
+        atual: "BMW 320i GP 2020",
+        valor: "R$ 235.000",
+        desejado: "BMW X1 sDrive20i 2025",
+        extra: "R$ 40.000",
+        objetivo: "Migrar para um SUV premium",
+        profissao: "Advogado",
+        idade: 43,
+        parcelaIdeal: "R$ 6.200"
+    },
+    {
+        atual: "Audi A3 Sedan 2021",
+        valor: "R$ 210.000",
+        desejado: "Audi Q3 Performance 2024",
+        extra: "R$ 35.000",
+        objetivo: "Ter mais conforto e espaço interno",
+        profissao: "Diretor Comercial",
+        idade: 46,
+        parcelaIdeal: "R$ 5.900"
+    },
+    {
+        atual: "Fiat Mobi Like 2021",
+        valor: "R$ 44.000",
+        desejado: "Citroën C3 Feel 2024",
+        extra: "R$ 4.000",
+        objetivo: "Trocar por um carro mais moderno",
+        profissao: "Atendente",
+        idade: 23,
+        parcelaIdeal: "R$ 890"
+    },
+    {
+        atual: "Peugeot 208 Allure 2022",
+        valor: "R$ 76.000",
+        desejado: "Peugeot 2008 Griffe 2024",
+        extra: "R$ 10.000",
+        objetivo: "Comprar um SUV compacto",
+        profissao: "Designer Gráfico",
+        idade: 30,
+        parcelaIdeal: "R$ 1.450"
+    },
+    {
+        atual: "BYD Dolphin GS 2024",
+        valor: "R$ 150.000",
+        desejado: "BYD Song Plus 2025",
+        extra: "R$ 20.000",
+        objetivo: "Ter um híbrido mais espaçoso",
+        profissao: "Especialista em TI",
+        idade: 35,
+        parcelaIdeal: "R$ 3.300"
+    }
+];
+
+// ══════════════════════════════════════════════════════
+// ESTADO GLOBAL
+// ══════════════════════════════════════════════════════
+let conversationHistory = [];
+let vendorName          = '';
+let selectedProfile     = 'iniciante';
+let selectedDiff        = 'medio';
+let clientData          = {};
+let mood                = { trust: 50, interest: 60, patience: 70 };
+let messageCount        = 0;
+let isProcessing        = false;
+let simulationActive    = false;
+let totalScore          = 50;
+
+// ══════════════════════════════════════════════════════
+// TELA DE LOGIN
+// ══════════════════════════════════════════════════════
+function checkPassword() {
+    const passwordInput = document.getElementById('passwordInput');
+    const password      = passwordInput.value;
+    const loginError    = document.getElementById('loginError');
+
+    if (password === ACCESS_PASSWORD) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('configScreen').style.display = 'block';
+        passwordInput.value = ''; // Limpa a senha
+    } else {
+        loginError.style.display = 'block';
+        passwordInput.value = '';
+        passwordInput.focus();
+    }
+}
+
+// Permite Enter na tela de login
+document.getElementById('passwordInput').addEventListener('keypress', e => {
+    if (e.key === 'Enter') checkPassword();
+});
+
+// ══════════════════════════════════════════════════════
+// SELEÇÃO NA CONFIG
+// ══════════════════════════════════════════════════════
+document.querySelectorAll('#profileGrid .sel-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('#profileGrid .sel-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedProfile = btn.dataset.profile;
+    });
+});
+
+document.querySelectorAll('#diffGrid .sel-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('#diffGrid .sel-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedDiff = btn.dataset.diff;
+    });
+});
+
+// ══════════════════════════════════════════════════════
+// INICIAR SIMULAÇÃO
+// ══════════════════════════════════════════════════════
+function startSimulation() {
+    const nameInput = document.getElementById('vendorName').value.trim();
+    vendorName = nameInput || 'Vendedor';
+
+    const perfil  = perfis[selectedProfile];
+    const diff    = dificuldades[selectedDiff];
+    const carro   = carrosScenarios[Math.floor(Math.random() * carrosScenarios.length)];
+    const nomeCliente = nomesClientes[Math.floor(Math.random() * nomesClientes.length)];
+
+    clientData = {
+        nome:    nomeCliente,
+        perfil,
+        diff,
+        carro,
+        maxMensagens: diff.maxMensagens
+    };
+
+    mood = {
+        trust:    50,
+        interest: 60,
+        patience: diff.paciencia
+    };
+
+    // Atualizar header do chat
+    document.getElementById('clientAvatar').textContent  = perfil.avatar;
+    document.getElementById('clientName').textContent    = nomeCliente;
+    document.getElementById('clientSubtitle').textContent = `${perfil.nome} · Dificuldade ${selectedDiff.charAt(0).toUpperCase()+selectedDiff.slice(1)}`;
+
+    updateMoodBars();
+    updateScore();
+
+    // Trocar telas
+    document.getElementById('configScreen').style.display = 'none';
+    const chat = document.getElementById('chatScreen');
+    chat.style.display = 'flex';
+
+    // Construir system prompt
+    const systemPrompt = buildSystemPrompt(nomeCliente, perfil, diff, carro);
+    conversationHistory = [{ role: 'system', content: systemPrompt }];
+
+    simulationActive = true;
+    document.getElementById('statusBar').textContent = '🟡 Iniciando conversa...';
+
+    // Cliente faz a primeira mensagem
+    callGroq(null, true);
+}
+
+// ══════════════════════════════════════════════════════
+// SYSTEM PROMPT
+// ══════════════════════════════════════════════════════
+function buildSystemPrompt(nome, perfil, diff, carro) {
+    return `
+Você é um cliente real chamado ${nome} que está conversando via WhatsApp com ${vendorName}, vendedor de consórcio automotivo da empresa Caminho Veículos.
+
+# SEU PERFIL PSICOLÓGICO
+${perfil.personalidade}
+
+# SUA SITUAÇÃO FINANCEIRA
+- Carro atual: ${carro.atual} (vale aproximadamente ${carro.valor})
+- Carro desejado: ${carro.desejado}
+- Dinheiro guardado: ${carro.extra}
+- Objetivo: usar o dinheiro guardado + vender o carro atual para entrar no consórcio ou dar como lance
+
+# SUA PERSONALIDADE COMO CLIENTE
+- Nível de paciência: ${diff.paciencia}/100 (quanto menor, mais impaciente você fica com respostas ruins)
+- Nível de agressividade: ${diff.agressividade}/10
+- Nível técnico das perguntas: ${diff.tecnicidade}/10
+
+# COMO VOCÊ SE COMPORTA
+- Você faz UMA pergunta por mensagem e aguarda a resposta
+- Reage emocionalmente às respostas — se a resposta for ruim, fica mais desconfiado
+- Se a resposta for boa, aumenta o interesse e a confiança
+- Se a resposta for evasiva ("depende", "varia", "posso te mandar depois"), fica irritado
+- Interrompe quando não entende ou quando o vendedor é vago
+- Usa linguagem informal, erros de digitação ocasionais, gírias normais do WhatsApp
+- Às vezes manda a mesma coisa em partes, como WhatsApp real
+
+# TEMAS QUE VOCÊ PODE PERGUNTAR (escolha contextualmente, não em ordem fixa)
+- O que é exatamente a carta de crédito e como eu uso ela
+- Taxa administrativa: quanto é, o que inclui, é cobrada como?
+- Fundo de reserva: para que serve, é devolvido no final?
+- Seguro: é obrigatório? Quanto custa?
+- Assembleia: como funciona, quando acontece, posso participar?
+- Lance: o que é lance fixo vs livre, como calcular, quando compensa
+- FGTS: posso usar como lance? Como funciona?
+- Reajuste: índice IGPM ou IPCA, como afeta minha parcela
+- Contemplação: prazo médio realista, não o "pode ser no primeiro mês"
+- Cancelamento: o que acontece se eu não conseguir pagar, quanto perco
+- Regulamentação: BACEN, o que garante que não vou perder meu dinheiro
+- Diferencial: por que a Caminho Veículos e não outra administradora
+- Posso usar o carro atual como entrada ou lance?
+- Comparação com financiamento: quando cada um é melhor
+- Documentação: o que preciso para aderir
+
+# REGRAS ABSOLUTAS
+- Faça APENAS UMA PERGUNTA por mensagem
+- NUNCA responda pelo vendedor
+- NUNCA saia do personagem
+- NUNCA diga que é IA ou chatbot
+- NUNCA facilite propositalmente
+- Se o vendedor errar um dado técnico, questione — você pesquisou antes
+- Se a resposta for boa e precisa, reaja positivamente mas faça nova pergunta
+- Se a resposta for ruim, demonstre frustração ou desconfiança
+- Ao final (após ${diff.maxMensagens} trocas), tome uma decisão explícita: quer fechar, quer pensar, ou não quer mais
+
+# ESTILO DE ESCRITA
+- Mensagens curtas como WhatsApp real
+- Sem formalidade excessiva
+- Reações humanas: "hmm", "entendi", "boa", "eita", "aff", "certo né"
+- Às vezes manda emoji
+- Começa a conversa se apresentando e contando sua situação brevemente
+
+Lembre-se: seu objetivo é treinar o vendedor. Seja exigente, realista e humano.
+`.trim();
+}
+
+// ══════════════════════════════════════════════════════
+// CHAMAR A API DO GROQ
+// ══════════════════════════════════════════════════════
+async function callGroq(userMessage, isFirst = false) {
+    isProcessing = true;
+    setInput(false);
+    showTyping();
+
+    if (userMessage) {
+        conversationHistory.push({ role: 'user', content: userMessage });
+    } else if (isFirst) {
+        conversationHistory.push({
+            role: 'user',
+            content: 'Inicie a conversa. Apresente-se brevemente e conte sua situação. Faça apenas uma pergunta inicial.'
+        });
+    }
+
+    try {
+        const response = await fetch('/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                messages: conversationHistory,
+                temperature: 0.85,
+                max_tokens: 300,
+                top_p: 0.9
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || 'Erro na API /chat');
+        }
+
+        const data   = await response.json();
+        const reply  = data.choices[0].message.content.trim();
+
+        conversationHistory.push({ role: 'assistant', content: reply });
+
+        removeTyping();
+        addBotMessage(reply);
+        messageCount++;
+
+        updateMoodFromReply(reply, userMessage);
+        updateScore();
+        updateMoodBars();
+
+        const maxMsg = clientData.maxMensagens;
+
+        if (messageCount >= maxMsg || isEndSignal(reply)) {
+            document.getElementById('statusBar').textContent = '📊 Gerando avaliação final...';
+            setInput(false);
+            simulationActive = false;
+            setTimeout(() => requestEvaluation(), 2000);
+        } else {
+            setInput(true);
+            document.getElementById('statusBar').textContent =
+                `🟢 ${clientData.nome} aguarda sua resposta · Troca ${messageCount}/${maxMsg}`;
+            document.getElementById('userInput').focus();
+        }
+
+    } catch (error) {
+        removeTyping();
+        addBotMessage(`⚠️ Erro: ${error.message}`);
+        document.getElementById('statusBar').textContent = '🔴 Erro de conexão';
+        isProcessing = false;
+        setInput(true);
+    }
+}
+
+// ══════════════════════════════════════════════════════
+// SOLICITAR AVALIAÇÃO FINAL
+// ══════════════════════════════════════════════════════
+async function requestEvaluation() {
+    const evalPrompt = `
+ATENÇÃO: Saia completamente do personagem de cliente agora.
+
+Você é um avaliador especialista em treinamento de vendas de consórcio automotivo.
+
+Analise toda a conversa anterior entre o cliente (você) e o vendedor ${vendorName}.
+
+Retorne SOMENTE um JSON válido neste formato, sem texto adicional:
+
+{
+  "decisao": "fechou" | "interessado" | "duvida" | "perdeu",
+  "pontuacao_geral": <0 a 100>,
+  "criterios": {
+    "tecnica": <0-100>,
+    "clareza": <0-100>,
+    "persuasao": <0-100>,
+    "empatia": <0-100>,
+    "fechamento": <0-100>,
+    "conhecimento_produto": <0-100>
+  },
+  "pontos_fortes": ["...", "..."],
+  "pontos_fracos": ["...", "..."],
+  "momentos_criticos": ["...", "..."],
+  "feedback_geral": "<parágrafo detalhado de 3-4 linhas>",
+  "dica_principal": "<dica objetiva e acionável>",
+  "humor_final": { "confianca": <0-100>, "interesse": <0-100>, "paciencia": <0-100> }
+}
+`.trim();
+
+    conversationHistory.push({ role: 'user', content: evalPrompt });
+    showTyping();
+
+    try {
+        const response = await fetch('/eval', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                messages: conversationHistory,
+                temperature: 0.2,
+                max_tokens: 800
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || 'Erro na API /eval');
+        }
+
+        const data = await response.json();
+        const raw  = data.choices[0].message.content.trim();
+
+        removeTyping();
+
+        const match = raw.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error('JSON inválido');
+
+        const ev = JSON.parse(match[0]);
+        renderEvaluation(ev);
+
+    } catch (e) {
+        removeTyping();
+        addBotMessage('⚠️ Não foi possível gerar a avaliação automática.');
+        document.getElementById('statusBar').textContent = '🔴 Simulação encerrada';
+    }
+}
+// ══════════════════════════════════════════════════════
+// RENDERIZAR AVALIAÇÃO
+// ══════════════════════════════════════════════════════
+function renderEvaluation(ev) {
+    document.getElementById('statusBar').textContent = '🔴 Simulação finalizada';
+
+    const decMap = {
+        fechou:      { label: '✅ FECHOU NEGÓCIO',    bg: '#e8f5e9', color: '#2e7d32' },
+        interessado: { label: '⚡ MUITO INTERESSADO', bg: '#e3f2fd', color: '#1565c0' },
+        duvida:      { label: '⚠️ EM DÚVIDA',        bg: '#fff3e0', color: '#e65100' },
+        perdeu:      { label: '❌ CLIENTE PERDIDO',   bg: '#ffebee', color: '#b71c1c' }
+    };
+
+    const dec  = decMap[ev.decisao] || decMap.duvida;
+    const pct  = ev.pontuacao_geral || 0;
+
+    let ringClass = 'ring-red';
+    if (pct >= 85) ringClass = 'ring-green';
+    else if (pct >= 70) ringClass = 'ring-blue';
+    else if (pct >= 50) ringClass = 'ring-orange';
+
+    const critLabels = {
+        tecnica:             '🔧 Técnica',
+        clareza:             '💬 Clareza',
+        persuasao:           '🎯 Persuasão',
+        empatia:             '❤️ Empatia',
+        fechamento:          '🤝 Fechamento',
+        conhecimento_produto:'📚 Conhecimento do Produto'
+    };
+
+    let critsHtml = '';
+    Object.entries(ev.criterios || {}).forEach(([k, v]) => {
+        const cor = v >= 75 ? '#4caf50' : v >= 50 ? '#ff9800' : '#f44336';
+        critsHtml += `
+            <div class="crit-bar">
+                <div class="crit-head"><span>${critLabels[k] || k}</span><span>${v}%</span></div>
+                <div class="bar-track"><div class="bar-fill" style="width:${v}%;background:${cor}"></div></div>
+            </div>`;
+    });
+
+    const fortes   = (ev.pontos_fortes      || []).map(p => `<li>✅ ${p}</li>`).join('');
+    const fracos   = (ev.pontos_fracos      || []).map(p => `<li>❌ ${p}</li>`).join('');
+    const momentos = (ev.momentos_criticos  || []).map(p => `<li>⚡ ${p}</li>`).join('');
+
+    const card = document.createElement('div');
+    card.className = 'eval-card';
+    card.innerHTML = `
+        <h2>📊 RESULTADO DA SIMULAÇÃO</h2>
+        <div class="score-ring ${ringClass}">
+            <span class="big">${pct}</span>
+            <span class="small">PONTOS</span>
+        </div>
+        <div class="decision-badge" style="background:${dec.bg};color:${dec.color}">${dec.label}</div>
+        <hr class="divider">
+        <div class="eval-row"><span class="lbl">Vendedor</span><span class="val">${vendorName}</span></div>
+        <div class="eval-row"><span class="lbl">Cliente</span><span class="val">${clientData.nome} · ${clientData.perfil.nome}</span></div>
+        <div class="eval-row"><span class="lbl">Dificuldade</span><span class="val">${selectedDiff.charAt(0).toUpperCase()+selectedDiff.slice(1)}</span></div>
+        <div class="eval-row"><span class="lbl">Trocas</span><span class="val">${messageCount} mensagens</span></div>
+        <hr class="divider">
+        <div class="eval-sec">📈 Avaliação por Critério</div>
+        ${critsHtml}
+        ${fortes   ? `<hr class="divider"><div class="eval-sec">💪 Pontos Fortes</div><ul class="eval-list">${fortes}</ul>` : ''}
+        ${fracos   ? `<hr class="divider"><div class="eval-sec">⚠️ Pontos a Melhorar</div><ul class="eval-list">${fracos}</ul>` : ''}
+        ${momentos ? `<hr class="divider"><div class="eval-sec">⚡ Momentos Críticos</div><ul class="eval-list">${momentos}</ul>` : ''}
+        <hr class="divider">
+        <div class="eval-sec">💬 Feedback Geral</div>
+        <div class="feedback-box fb-green">${ev.feedback_geral || ''}</div>
+        <div class="eval-sec">💡 Principal Dica</div>
+        <div class="feedback-box fb-blue">${ev.dica_principal || ''}</div>
+        <button class="restart-btn" onclick="location.reload()">🔄 Nova Simulação</button>
+    `;
+
+    document.getElementById('chatBox').appendChild(card);
+    document.getElementById('chatBox').scrollTop = 99999;
+}
+
+// ══════════════════════════════════════════════════════
+// ENVIAR MENSAGEM DO VENDEDOR
+// ══════════════════════════════════════════════════════
+function sendMessage() {
+    if (isProcessing || !simulationActive) return;
+    const input = document.getElementById('userInput');
+    const text  = input.value.trim();
+    if (!text || text.length < 5) {
+        input.style.borderColor = '#f44336';
+        setTimeout(() => input.style.borderColor = '#ddd', 1500);
+        return;
+    }
+    input.value = '';
+    addUserMessage(text);
+    callGroq(text);
+}
+
+// ══════════════════════════════════════════════════════
+// DETECTAR SINAL DE FIM
+// ══════════════════════════════════════════════════════
+function isEndSignal(text) {
+    const endings = [
+        'quero fechar','vou fechar','me manda o contrato','próximos passos',
+        'vou procurar outra','não me convenceu','vou pensar melhor',
+        'não tenho mais perguntas','pode me passar','obrigado por tudo'
+    ];
+    const lower = text.toLowerCase();
+    return endings.some(e => lower.includes(e));
+}
+
+// ══════════════════════════════════════════════════════
+// HUMOR
+// ══════════════════════════════════════════════════════
+function updateMoodFromReply(botReply, userMsg) {
+    const combined = (botReply + ' ' + (userMsg || '')).toLowerCase();
+
+    if (/entendi|faz sentido|boa resposta|gostei|isso ajuda|confiança|confio|tá bom/.test(combined)) {
+        mood.trust    = Math.min(100, mood.trust + 10);
+        mood.interest = Math.min(100, mood.interest + 8);
+    }
+    if (/não entendi|vago|confuso|outra empresa|não me convenceu|evasivo|não respondeu/.test(combined)) {
+        mood.trust    = Math.max(5, mood.trust - 12);
+        mood.patience = Math.max(5, mood.patience - 10);
+    }
+    if (/rápido|urgente|prazo|90 dias|preciso logo/.test(combined)) {
+        mood.patience = Math.max(5, mood.patience - 6);
+    }
+    if (/fechar|assinar|quero fazer|vamos em frente|próximos passos/.test(combined)) {
+        mood.trust    = Math.min(100, mood.trust + 18);
+        mood.interest = Math.min(100, mood.interest + 18);
+    }
+}
+
+function updateMoodBars() {
+    document.getElementById('trustBar').style.width    = mood.trust    + '%';
+    document.getElementById('interestBar').style.width = mood.interest + '%';
+    document.getElementById('patienceBar').style.width = mood.patience + '%';
+}
+
+function updateScore() {
+    totalScore = Math.round(mood.trust * 0.45 + mood.interest * 0.35 + mood.patience * 0.2);
+    document.getElementById('scoreDisplay').textContent = totalScore;
+}
+
+// ══════════════════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════════════════
+function addBotMessage(text) {
+    const box = document.getElementById('chatBox');
+    const d   = document.createElement('div');
+    d.className = 'message bot';
+    d.innerHTML = `<div class="bubble">${escHtml(text)}<div class="bubble-ts">${now()}</div></div>`;
+    box.appendChild(d);
+    box.scrollTop = 99999;
+    isProcessing  = false;
+}
+
+function addUserMessage(text) {
+    const box = document.getElementById('chatBox');
+    const d   = document.createElement('div');
+    d.className = 'message user';
+    d.innerHTML = `<div class="bubble">${escHtml(text)}<div class="bubble-ts">${now()} ✓✓</div></div>`;
+    box.appendChild(d);
+    box.scrollTop = 99999;
+}
+
+function showTyping() {
+    const box = document.getElementById('chatBox');
+    const d   = document.createElement('div');
+    d.className = 'message bot typing-row';
+    d.id = 'typingEl';
+    d.innerHTML = `<div class="typing-bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+    box.appendChild(d);
+    box.scrollTop = 99999;
+}
+
+function removeTyping() {
+    const el = document.getElementById('typingEl');
+    if (el) el.remove();
+    isProcessing = false;
+}
+
+function setInput(enabled) {
+    document.getElementById('userInput').disabled = !enabled;
+    document.getElementById('sendBtn').disabled   = !enabled;
+}
+
+function now() {
+    return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function escHtml(t) {
+    const d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML;
+}
+
+document.getElementById('userInput').addEventListener('keypress', e => {
+    if (e.key === 'Enter' && !document.getElementById('userInput').disabled) sendMessage();
+});
+</script>
+</body>
+</html>

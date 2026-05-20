@@ -603,8 +603,8 @@
 // CONFIGURAÇÕES GLOBAIS
 // ══════════════════════════════════════════════════════
 const ACCESS_PASSWORD = 'caminho2026'; // <--- DEFINA SUA SENHA AQUI!
-const MAX_TOKENS = 100; // Respostas curtas
-const MAX_HISTORY = 4;  // Histórico limitado
+const MAX_TOKENS = 120; // Respostas curtas
+const MAX_HISTORY = 6;  // Histórico limitado
 
 // ══════════════════════════════════════════════════════
 // DADOS DO CLIENTE (PERFIS, DIFICULDADES, CARROS, NOMES)
@@ -648,21 +648,21 @@ const dificuldades = {
         paciencia: 80,
         agressividade: 2,
         tecnicidade: 3,
-        maxMensagens: 10
+        maxMensagens: 12  // Era 10 - mais tempo para decidir naturalmente
     },
     medio: {
-        nome: "Médio",
+        nome: "Médio", 
         paciencia: 60,
         agressividade: 5,
         tecnicidade: 6,
-        maxMensagens: 15
+        maxMensagens: 18  // Era 15 - mais tempo
     },
     dificil: {
         nome: "Difícil",
         paciencia: 40,
         agressividade: 8,
         tecnicidade: 9,
-        maxMensagens: 20
+        maxMensagens: 25  // Era 20 - muito mais tempo
     }
 };
 
@@ -1036,72 +1036,136 @@ function startSimulation() {
 // ══════════════════════════════════════════════════════
 // SYSTEM PROMPT
 // ══════════════════════════════════════════════════════
-function buildSystemPrompt(nome, perfil, diff, carro) {
-    return `
-Você é um cliente real chamado ${nome} que está conversando via WhatsApp com ${vendorName}, vendedor de consórcio automotivo da empresa Caminho Veículos.
+function buildSystemPrompt(nome, perfil, diffConfig, carro) {
+    const maxMsg = diffConfig.maxMensagens || 15;
 
-# SEU PERFIL PSICOLÓGICO
-${perfil.personalidade}
+    return `Você é ${nome}, cliente interessado em consórcio falando com vendedor.
 
-# SUA SITUAÇÃO FINANCEIRA
-- Carro atual: ${carro.atual} (vale aproximadamente ${carro.valor})
-- Carro desejado: ${carro.desejado}
-- Dinheiro guardado: ${carro.extra}
-- Objetivo: usar o dinheiro guardado + vender o carro atual para entrar no consórcio ou dar como lance
+PERFIL: ${perfil.personalidade}
 
-# SUA PERSONALIDADE COMO CLIENTE
-- Nível de paciência: ${diff.paciencia}/100 (quanto menor, mais impaciente você fica com respostas ruins)
-- Nível de agressividade: ${diff.agressividade}/10
-- Nível técnico das perguntas: ${diff.tecnicidade}/10
+COMPORTAMENTO:
+- Você é LEIGO em consórcio (sabe pouco)
+- Faça perguntas DIRETAS e CURTAS durante a conversa
+- Reaja às respostas: "entendi", "interessante", "não ficou claro"
+- Linguagem natural WhatsApp (1-2 frases)
 
-# COMO VOCÊ SE COMPORTA
-- Você faz UMA pergunta por mensagem e aguarda a resposta
-- Reage emocionalmente às respostas — se a resposta for ruim, fica mais desconfiado
-- Se a resposta for boa, aumenta o interesse e a confiança
-- Se a resposta for evasiva ("depende", "varia", "posso te mandar depois"), fica irritado
-- Interrompe quando não entende ou quando o vendedor é vago
-- Usa linguagem informal, erros de digitação ocasionais, gírias normais do WhatsApp
-- Às vezes manda a mesma coisa em partes, como WhatsApp real
+FINALIZAÇÃO (IMPORTANTE):
+- Quando decidir, NUNCA faça pergunta
+- Se convencido: "Gostei! Vou até a loja falar com vocês"
+- Se não convencido: "Acho que não é pra mim, obrigado"
+- Se indeciso: "Vou pensar melhor e depois retorno"
+- SEMPRE termine com AFIRMAÇÃO, nunca com "?"
 
-# TEMAS QUE VOCÊ PODE PERGUNTAR (escolha contextualmente, não em ordem fixa)
-- O que é exatamente a carta de crédito e como eu uso ela
-- Taxa administrativa: quanto é, o que inclui, é cobrada como?
-- Fundo de reserva: para que serve, é devolvido no final?
-- Seguro: é obrigatório? Quanto custa?
-- Assembleia: como funciona, quando acontece, posso participar?
-- Lance: o que é lance fixo vs livre, como calcular, quando compensa
-- FGTS: posso usar como lance? Como funciona?
-- Reajuste: índice IGPM ou IPCA, como afeta minha parcela
-- Contemplação: prazo médio realista, não o "pode ser no primeiro mês"
-- Cancelamento: o que acontece se eu não conseguir pagar, quanto perco
-- Regulamentação: BACEN, o que garante que não vou perder meu dinheiro
-- Diferencial: por que a Caminho Veículos e não outra administradora
-- Posso usar o carro atual como entrada ou lance?
-- Comparação com financiamento: quando cada um é melhor
-- Documentação: o que preciso para aderir
+Seja CLIENTE REAL que toma decisões claras.`.trim();
+}
+// Detecta se o cliente deve tomar uma decisão baseada na resposta do vendedor
+function detectDecision(botReply, userMessage) {
+    const combined = (botReply + ' ' + (userMessage || '')).toLowerCase();
 
-# REGRAS ABSOLUTAS
-- Faça APENAS UMA PERGUNTA por mensagem
-- NUNCA responda pelo vendedor
-- NUNCA saia do personagem
-- NUNCA diga que é IA ou chatbot
-- NUNCA facilite propositalmente
-- Se o vendedor errar um dado técnico, questione — você pesquisou antes
-- Se a resposta for boa e precisa, reaja positivamente mas faça nova pergunta
-- Se a resposta for ruim, demonstre frustração ou desconfiança
-- Ao final (após ${diff.maxMensagens} trocas), tome uma decisão explícita: quer fechar, quer pensar, ou não quer mais
+    // SINAIS CLAROS DE FINALIZAÇÃO (sem perguntas)
+    const closingStatements = [
+        'gostei', 'me interessou', 'vou fazer', 'quero fazer', 'tô dentro',
+        'vou até a loja', 'vamos conversar pessoalmente', 'me convenceu',
+        'não é pra mim', 'não quero', 'não me interessa', 'vou pensar',
+        'preciso conversar com', 'não compensa', 'muito caro', 'obrigado'
+    ];
 
-# ESTILO DE ESCRITA
-- Mensagens curtas como WhatsApp real
-- Sem formalidade excessiva
-- Reações humanas: "hmm", "entendi", "boa", "eita", "aff", "certo né"
-- Às vezes manda emoji
-- Começa a conversa se apresentando e contando sua situação brevemente
+    // DETECTA se o cliente fez uma AFIRMAÇÃO (não pergunta)
+    const hasClosingStatement = closingStatements.some(phrase => combined.includes(phrase));
 
-Lembre-se: seu objetivo é treinar o vendedor. Seja exigente, realista e humano.
-`.trim();
+    // DETECTA se terminou com PERGUNTA (não deve finalizar)
+    const endsWithQuestion = /\?$/.test(botReply.trim()) || 
+                           /como|quando|onde|qual|quanto/.test(botReply.split(' ').slice(-3).join(' '));
+
+    // SÓ FINALIZA se tem afirmação E NÃO termina com pergunta
+    if (hasClosingStatement && !endsWithQuestion) {
+        // Determina o tipo de decisão
+        if (/gostei|interessou|vou fazer|quero|tô dentro|convenceu|vou até a loja/.test(combined)) {
+            return 'fechou';
+        } else if (/não é pra mim|não quero|não me interessa|não compensa|muito caro/.test(combined)) {
+            return 'rejeitou';
+        } else {
+            return 'pensando';
+        }
+    }
+
+    return null; // Continua conversa
 }
 
+function avaliarSatisfacao(userMessage, conversationHistory) {
+    const ultimasRespostas = conversationHistory.slice(-4); // Últimas 4 trocas
+    const todasRespostas = ultimasRespostas.map(msg => msg.content).join(' ').toLowerCase();
+
+    // Indicadores de BOA explicação do vendedor
+    const boasExplicacoes = [
+        'contemplação', 'sorteio', 'lance', 'administradora', 'taxa', 'prazo',
+        'funciona assim', 'é simples', 'garantia', 'seguro', 'regulamentado'
+    ];
+
+    // Indicadores de MÁ explicação do vendedor  
+    const masExplicacoes = [
+        'não sei', 'talvez', 'acho que', 'mais ou menos', 'depende',
+        'vou verificar', 'depois te falo'
+    ];
+
+    const temBoaExplicacao = boasExplicacoes.some(termo => todasRespostas.includes(termo));
+    const temMaExplicacao = masExplicacoes.some(termo => todasRespostas.includes(termo));
+
+    // Baseado no humor atual + qualidade das explicações
+    const confianca = mood.trust;
+    const interesse = mood.interest;
+
+    // CLIENTE CONVENCIDO (vai fechar)
+    if (confianca >= 70 && interesse >= 65 && temBoaExplicacao && !temMaExplicacao) {
+        return 'convencido';
+    }
+
+    // CLIENTE INSATISFEITO (vai rejeitar)
+    if (confianca <= 40 || temMaExplicacao || interesse <= 30) {
+        return 'insatisfeito';
+    }
+
+    // CLIENTE INDECISO (vai pensar)
+    if (messageCount >= 6 && confianca >= 45 && interesse >= 45) {
+        return 'indeciso';
+    }
+
+    return null; // Continua conversa
+}
+
+// Gera mensagem final baseada na decisão
+function gerarMensagemFinal(decisao, perfil) {
+    const mensagensConvencido = [
+        "Gostei bastante! Vou passar na loja para conversarmos melhor.",
+        "Me interessei sim. Quando posso ir aí para fechar?",
+        "Ficou claro pra mim. Vou fazer sim, como procedo?",
+        "Perfeito! Quero aderir. Qual o próximo passo?",
+        "Entendi tudo. Vou fazer o consórcio sim!"
+    ];
+
+    const mensagensInsatisfeito = [
+        "Acho que não é pra mim não. Obrigado!",
+        "Não me convenceu não. Vou pensar em outras opções.",
+        "Muito complicado isso. Prefiro financiar mesmo.",
+        "Não curti não. Muito arriscado pra mim.",
+        "Não rola não. Obrigado pela atenção!"
+    ];
+
+    const mensagensIndeciso = [
+        "Vou pensar melhor e depois te procuro.",
+        "Preciso conversar com minha esposa primeiro.",
+        "Deixa eu analisar direitinho e te retorno.",
+        "Vou pesquisar mais um pouco e depois falo com você.",
+        "Interessante, mas vou pensar com calma."
+    ];
+
+    let opcoes;
+    if (decisao === 'convencido') opcoes = mensagensConvencido;
+    else if (decisao === 'insatisfeito') opcoes = mensagensInsatisfeito;
+    else opcoes = mensagensIndeciso;
+
+    return opcoes[Math.floor(Math.random() * opcoes.length)];
+}
 // ══════════════════════════════════════════════════════
 // CHAMAR A API DO GROQ
 // ══════════════════════════════════════════════════════
@@ -1115,21 +1179,73 @@ async function callGroq(userMessage, isFirst = false) {
     } else if (isFirst) {
         conversationHistory.push({
             role: 'user',
-            content: 'Inicie a conversa. Apresente-se brevemente e conte sua situação. Faça apenas uma pergunta inicial.'
+            content: `
+    Você é o cliente e vai mandar a PRIMEIRA mensagem para o vendedor no WhatsApp.
+
+    Envie APENAS UMA mensagem curta, em primeira pessoa:
+    - se apresente com seu nome;
+    - diga sua situação com carro (tem / não tem / quer trocar);
+    - diga que ouviu falar de consórcio mas não entende bem;
+    - faça UMA pergunta simples sobre consórcio.
+
+    Envie só essa mensagem e depois espere a resposta do vendedor.
+    `.trim()
         });
     }
 
     try {
+        // mantém o system na frente e só as últimas N mensagens reais
+        const systemMsg = conversationHistory[0]; // role: 'system'
+        const historyWithoutSystem = conversationHistory.slice(1);
+        const trimmedHistory = historyWithoutSystem.slice(-MAX_HISTORY);
+
+        const messagesToSend = [systemMsg, ...trimmedHistory];
+
+        // ========== INSERIR AQUI ==========
+        // Se está nas últimas 3 mensagens, força finalização sem pergunta
+        const maxMsg = clientData.maxMensagens;
+        if (messageCount >= maxMsg - 3) {
+            const satisfacao = avaliarSatisfacao(userMessage, conversationHistory);
+
+            if (satisfacao) {
+                // Gera mensagem final baseada na satisfação
+                const mensagemFinal = gerarMensagemFinal(satisfacao, clientData.perfil);
+
+                // Simula digitação e envia mensagem final
+                setTimeout(() => {
+                    removeTyping();
+                    addBotMessage(mensagemFinal);
+
+                    // Finaliza simulação
+                    setTimeout(() => {
+                        let statusText = '';
+                        if (satisfacao === 'convencido') statusText = '✅ Cliente interessado! Gerando avaliação...';
+                        else if (satisfacao === 'insatisfeito') statusText = '❌ Cliente não convencido. Gerando avaliação...';
+                        else statusText = '🤔 Cliente quer pensar. Gerando avaliação...';
+
+                        document.getElementById('statusBar').textContent = statusText;
+                        setInput(false);
+                        simulationActive = false;
+                        setTimeout(() => requestEvaluation(), 2000);
+                    }, 1000);
+                }, 1500);
+
+                return; // Para aqui, não chama a API
+            }
+        }
+        // ========== FIM DA INSERÇÃO ==========
+
         const response = await fetch('/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                messages: conversationHistory,
-                temperature: 0.85,
-                max_tokens: 300,
-                top_p: 0.9
+                messages: messagesToSend,
+                temperature: 0.7,
+                max_tokens: MAX_TOKENS,
+                top_p: 0.85,
+                stop: ["\n\n", "---"]
             })
         });
 
@@ -1143,28 +1259,49 @@ async function callGroq(userMessage, isFirst = false) {
 
         conversationHistory.push({ role: 'assistant', content: reply });
 
-        removeTyping();
-        addBotMessage(reply);
-        messageCount++;
+removeTyping();
+addBotMessage(reply);
 
-        updateMoodFromReply(reply, userMessage);
-        updateScore();
-        updateMoodBars();
+// VERIFICAÇÃO EXTRA: Se cliente fez pergunta na possível finalização, não finalizar ainda
+const endsWithQuestion = reply.trim().endsWith('?') || 
+                        /como|quando|onde|qual|quanto/.test(reply.split(' ').slice(-2).join(' '));
 
-        const maxMsg = clientData.maxMensagens;
+const decision = detectDecision(reply, userMessage);
 
-        if (messageCount >= maxMsg || isEndSignal(reply)) {
-            document.getElementById('statusBar').textContent = '📊 Gerando avaliação final...';
-            setInput(false);
-            simulationActive = false;
-            setTimeout(() => requestEvaluation(), 2000);
-        } else {
-            setInput(true);
-            document.getElementById('statusBar').textContent =
-                `🟢 ${clientData.nome} aguarda sua resposta · Troca ${messageCount}/${maxMsg}`;
-            document.getElementById('userInput').focus();
-        }
+// SÓ FINALIZA se tem decisão E NÃO terminou com pergunta
+if (decision && !endsWithQuestion) {
+    let statusText = '';
+    if (decision === 'fechou') statusText = '✅ Cliente interessado! Gerando avaliação...';
+    else if (decision === 'rejeitou') statusText = '❌ Cliente não convencido. Gerando avaliação...';
+    else statusText = '🤔 Cliente quer pensar. Gerando avaliação...';
 
+    document.getElementById('statusBar').textContent = statusText;
+    setInput(false);
+    simulationActive = false;
+    setTimeout(() => requestEvaluation(), 2000);
+    return;
+}
+
+messageCount++;
+
+updateMoodFromReply(reply, userMessage);
+updateScore();
+updateMoodBars();
+
+// Continua conversa normalmente
+if (messageCount >= maxMsg) {
+    document.getElementById('statusBar').textContent = '📊 Tempo esgotado - Gerando avaliação...';
+    setInput(false);
+    simulationActive = false;
+    setTimeout(() => requestEvaluation(), 2000);
+} else {
+    const trocasRestantes = maxMsg - messageCount;
+    let statusText = `🟢 ${clientData.nome} aguarda resposta · ${messageCount}/${maxMsg}`;
+
+    setInput(true);
+    document.getElementById('statusBar').textContent = statusText;
+    document.getElementById('userInput').focus();
+}
     } catch (error) {
         removeTyping();
         addBotMessage(`⚠️ Erro: ${error.message}`);
@@ -1175,51 +1312,62 @@ async function callGroq(userMessage, isFirst = false) {
 }
 
 // ══════════════════════════════════════════════════════
-// SOLICITAR AVALIAÇÃO FINAL
+// SOLICITAR AVALIAÇÃO FINAL  (VERSÃO ENXUTA)
 // ══════════════════════════════════════════════════════
 async function requestEvaluation() {
     const evalPrompt = `
-ATENÇÃO: Saia completamente do personagem de cliente agora.
+Você agora NÃO é mais o cliente. Agora você é um avaliador especialista em treinamento de vendas de consórcio automotivo.
 
-Você é um avaliador especialista em treinamento de vendas de consórcio automotivo.
+Analise a conversa acima entre o vendedor ${vendorName} e o cliente. Foque em:
+- se o vendedor explicou bem consórcio,
+- se fez boas perguntas,
+- se gerou confiança,
+- se conduziu para um fechamento claro (sim ou não).
 
-Analise toda a conversa anterior entre o cliente (você) e o vendedor ${vendorName}.
+Responda SOMENTE com um JSON VÁLIDO, sem nenhum texto antes ou depois.
 
-Retorne SOMENTE um JSON válido neste formato, sem texto adicional:
+Formato EXATO:
 
 {
   "decisao": "fechou" | "interessado" | "duvida" | "perdeu",
-  "pontuacao_geral": <0 a 100>,
+  "pontuacao_geral": 0-100,
   "criterios": {
-    "tecnica": <0-100>,
-    "clareza": <0-100>,
-    "persuasao": <0-100>,
-    "empatia": <0-100>,
-    "fechamento": <0-100>,
-    "conhecimento_produto": <0-100>
+    "tecnica": 0-100,
+    "clareza": 0-100,
+    "persuasao": 0-100,
+    "empatia": 0-100,
+    "fechamento": 0-100,
+    "conhecimento_produto": 0-100
   },
-  "pontos_fortes": ["...", "..."],
-  "pontos_fracos": ["...", "..."],
-  "momentos_criticos": ["...", "..."],
-  "feedback_geral": "<parágrafo detalhado de 3-4 linhas>",
-  "dica_principal": "<dica objetiva e acionável>",
-  "humor_final": { "confianca": <0-100>, "interesse": <0-100>, "paciencia": <0-100> }
+  "pontos_fortes": ["texto curto 1", "texto curto 2"],
+  "pontos_fracos": ["texto curto 1", "texto curto 2"],
+  "momentos_criticos": ["momento 1", "momento 2"],
+  "feedback_geral": "um parágrafo curto avaliando o atendimento",
+  "dica_principal": "uma dica prática e direta de melhoria",
+  "humor_final": { "confianca": 0-100, "interesse": 0-100, "paciencia": 0-100 }
 }
 `.trim();
 
-    conversationHistory.push({ role: 'user', content: evalPrompt });
+    // system + poucas mensagens recentes para não estourar tokens
+    const systemMsg = conversationHistory[0];
+    const historyWithoutSystem = conversationHistory.slice(1);
+    const evalHistory = [systemMsg, ...historyWithoutSystem.slice(-8)]; // antes era -14
+
+    const evalHistoryComPrompt = [
+        ...evalHistory,
+        { role: 'user', content: evalPrompt }
+    ];
+
     showTyping();
 
     try {
         const response = await fetch('/eval', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                messages: conversationHistory,
+                messages: evalHistoryComPrompt,
                 temperature: 0.2,
-                max_tokens: 800
+                max_tokens: 400 // reduzido para gastar menos
             })
         });
 
@@ -1242,6 +1390,7 @@ Retorne SOMENTE um JSON válido neste formato, sem texto adicional:
     } catch (e) {
         removeTyping();
         addBotMessage('⚠️ Não foi possível gerar a avaliação automática.');
+        console.error('Erro na avaliação:', e);
         document.getElementById('statusBar').textContent = '🔴 Simulação encerrada';
     }
 }
@@ -1342,13 +1491,7 @@ function sendMessage() {
 // DETECTAR SINAL DE FIM
 // ══════════════════════════════════════════════════════
 function isEndSignal(text) {
-    const endings = [
-        'quero fechar','vou fechar','me manda o contrato','próximos passos',
-        'vou procurar outra','não me convenceu','vou pensar melhor',
-        'não tenho mais perguntas','pode me passar','obrigado por tudo'
-    ];
-    const lower = text.toLowerCase();
-    return endings.some(e => lower.includes(e));
+    return false; // totalmente desativado por enquanto
 }
 
 // ══════════════════════════════════════════════════════

@@ -1,57 +1,26 @@
-// server.js
+import 'dotenv/config';
+import path from 'node:path';
 import express from 'express';
 import fetch from 'node-fetch';
-import dotenv from 'dotenv';
+import { fileURLToPath } from 'node:url';
 
-dotenv.config();
+// ===================== AJUSTES DE PATH NO ESM =====================
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
 
+// ===================== CONFIG BÁSICA =====================
 const app = express();
+
+const GROQ_URL   = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL = 'llama-3.1-8b-instant'; // ou o modelo que você já usava
+
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Servir arquivos estáticos (seu index.html, CSS, JS) na pasta "public"
-app.use(express.static('public'));
-
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama-3.1-8b-instant';
-
-// Rota para mensagens do cliente (simulação de conversa)
+// ===================== ROTA /chat (CLIENTE SIMULADO) =====================
 app.post('/chat', async (req, res) => {
   try {
-    const { messages, temperature = 0.85, max_tokens = 300, top_p = 0.9 } = req.body;
-
-    const groqRes = await fetch(GROQ_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: GROQ_MODEL,
-        messages,
-        temperature,
-        max_tokens,
-        top_p
-      })
-    });
-
-    if (!groqRes.ok) {
-      const err = await groqRes.json().catch(() => ({}));
-      console.error('Erro Groq /chat:', err);
-      return res.status(500).json({ error: 'Erro na API Groq (chat)' });
-    }
-
-    const data = await groqRes.json();
-    res.json(data);
-  } catch (e) {
-    console.error('Erro interno /chat:', e);
-    res.status(500).json({ error: 'Erro interno no servidor (chat)' });
-  }
-});
-
-// Rota para avaliação final (mesma API Groq, só mudam mensagens e parâmetros)
-app.post('/eval', async (req, res) => {
-  try {
-    const { messages, temperature = 0.2, max_tokens = 800 } = req.body;
+    const { messages, temperature = 0.7, max_tokens = 120 } = req.body;
 
     const groqRes = await fetch(GROQ_URL, {
       method: 'POST',
@@ -69,17 +38,72 @@ app.post('/eval', async (req, res) => {
 
     if (!groqRes.ok) {
       const err = await groqRes.json().catch(() => ({}));
-      console.error('Erro Groq /eval:', err);
-      return res.status(500).json({ error: 'Erro na API Groq (eval)' });
+      console.error('Erro Groq /chat (HTTP != 200):', err);
+      return res.status(500).json({
+        error: 'Erro na API Groq (chat)',
+        details: err
+      });
     }
 
     const data = await groqRes.json();
-    res.json(data);
+    return res.json(data);
+
   } catch (e) {
-    console.error('Erro interno /eval:', e);
-    res.status(500).json({ error: 'Erro interno no servidor (eval)' });
+    console.error('Erro interno /chat:', e);
+    return res.status(500).json({
+      error: 'Erro interno no servidor (chat)',
+      details: e.message || String(e)
+    });
   }
 });
 
+// ===================== ROTA /eval (AVALIAÇÃO) =====================
+app.post('/eval', async (req, res) => {
+  try {
+    const { messages, temperature = 0.2, max_tokens = 500 } = req.body;
+
+    console.log('[/eval] Recebendo avaliação com', messages?.length || 0, 'mensagens');
+
+    const groqRes = await fetch(GROQ_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages,
+        temperature,
+        max_tokens
+      })
+    });
+
+    if (!groqRes.ok) {
+      const err = await groqRes.json().catch(() => ({}));
+      console.error('Erro Groq /eval (HTTP != 200):', err);
+      return res.status(500).json({
+        error: 'Erro na API Groq (eval)',
+        details: err
+      });
+    }
+
+    const data = await groqRes.json();
+    return res.json(data);
+
+  } catch (e) {
+    console.error('Erro interno /eval:', e);
+    return res.status(500).json({
+      error: 'Erro interno no servidor (eval)',
+      details: e.message || String(e)
+    });
+  }
+});
+
+// ===================== SUBIR SERVIDOR =====================
 const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`Servidor rodando na porta ${port}`));
+app.listen(port, () => {
+  console.log('====================================');
+  console.log(`Servidor rodando na porta ${port}`);
+  console.log('Acesse: http://localhost:' + port);
+  console.log('====================================');
+});
